@@ -213,8 +213,23 @@ class SnapchatDownloader:
         stories = []
         spotlight = []
         
+        # Working demo video URLs
+        demo_videos = [
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+        ]
+        
         # Create demo stories
         for i in range(1, 8):  # 7 demo stories
+            video_url = demo_videos[(i-1) % len(demo_videos)]
             stories.append({
                 'id': f"demo_story_{i}_{username}",
                 'title': f"{username}'s Story #{i}",
@@ -225,7 +240,7 @@ class SnapchatDownloader:
                 'type': 'story',
                 'snapchat_url': f"https://www.snapchat.com/add/{username}",
                 'formats': [{
-                    'url': f"https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4",
+                    'url': video_url,
                     'width': 360,
                     'height': 640,
                     'ext': 'mp4',
@@ -233,7 +248,7 @@ class SnapchatDownloader:
                     'quality': '640p'
                 }],
                 'best_quality': {
-                    'url': f"https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4",
+                    'url': video_url,
                     'width': 360,
                     'height': 640,
                     'ext': 'mp4',
@@ -249,7 +264,8 @@ class SnapchatDownloader:
             "Comedy Skit", "Life Hacks", "Fashion Tips", "Gaming Moment", "Nature Beauty"
         ]
         
-        for i, title in enumerate(spotlight_titles[:10], 1):  # 10 demo spotlight videos
+        for i, title in enumerate(spotlight_titles[:12], 1):  # 12 demo spotlight videos
+            video_url = demo_videos[(i-1) % len(demo_videos)]
             spotlight.append({
                 'id': f"demo_spotlight_{i}_{username}",
                 'title': f"{title} - {username}",
@@ -260,7 +276,7 @@ class SnapchatDownloader:
                 'type': 'spotlight',
                 'snapchat_url': f"https://www.snapchat.com/spotlight/{username}_{i}",
                 'formats': [{
-                    'url': f"https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4",
+                    'url': video_url,
                     'width': 720,
                     'height': 1280,
                     'ext': 'mp4',
@@ -268,7 +284,7 @@ class SnapchatDownloader:
                     'quality': '1280p'
                 }],
                 'best_quality': {
-                    'url': f"https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4",
+                    'url': video_url,
                     'width': 720,
                     'height': 1280,
                     'ext': 'mp4',
@@ -320,7 +336,65 @@ def download_story():
     except Exception as e:
         return jsonify(success=False, message=str(e)), 500
 
-# ... keep existing code (single snapchat endpoint)
+@app.route('/api/snapchat/single', methods=['POST'])
+def download_single_snapchat():
+    """Download single Snapchat story from URL"""
+    try:
+        data = request.get_json()
+        input_value = data.get('input', '').strip()
+
+        if not input_value:
+            return jsonify(success=False, message="URL is required"), 400
+
+        if not downloader.is_snapchat_url(input_value):
+            return jsonify(success=False, message="Please provide a valid Snapchat URL"), 400
+
+        # yt-dlp options
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'socket_timeout': 30,
+            'headers': downloader.headers
+        }
+
+        # Extract info
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(input_value, download=False)
+
+        # Build result
+        result = {
+            'title': info.get('title', ''),
+            'description': info.get('description', ''),
+            'thumbnail': info.get('thumbnail', ''),
+            'duration': info.get('duration', 0),
+            'uploader': info.get('uploader', ''),
+            'upload_date': info.get('upload_date', ''),
+            'view_count': info.get('view_count', 0),
+            'platform': info.get('extractor_key', 'Snapchat'),
+            'formats': []
+        }
+
+        # Process formats
+        for fmt in info.get('formats', []):
+            if fmt.get('protocol') in ['http', 'https'] and fmt.get('vcodec') != 'none':
+                result['formats'].append({
+                    'url': fmt['url'],
+                    'width': fmt.get('width', 0),
+                    'height': fmt.get('height', 0),
+                    'ext': fmt.get('ext', 'mp4'),
+                    'filesize': fmt.get('filesize', 0),
+                    'quality': f"{fmt.get('height', 0)}p" if fmt.get('height') else 'Unknown'
+                })
+
+        # Sort by quality
+        result['formats'].sort(key=lambda x: x['height'], reverse=True)
+
+        return jsonify(success=True, data=result)
+
+    except yt_dlp.utils.DownloadError as e:
+        return jsonify(success=False, message=f"Download error: {str(e)}"), 400
+    except Exception as e:
+        return jsonify(success=False, message=f"Server error: {str(e)}"), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
