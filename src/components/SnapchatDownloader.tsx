@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Download, Play, Eye, Clock, User } from 'lucide-react';
+import { Search, Download, Play, Eye, Clock, User, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,13 +25,17 @@ interface Story {
   view_count: number;
   formats: StoryFormat[];
   best_quality: StoryFormat | null;
+  type?: 'story' | 'spotlight';
 }
 
 interface StoriesResponse {
   username: string;
   profile_url: string;
+  avatar?: string;
   stories: Story[];
+  spotlight: Story[];
   total_count: number;
+  spotlight_count?: number;
 }
 
 interface SingleStoryResponse {
@@ -52,6 +56,7 @@ const SnapchatDownloader = () => {
   const [stories, setStories] = useState<StoriesResponse | null>(null);
   const [singleStory, setSingleStory] = useState<SingleStoryResponse | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
 
   const isSnapchatUrl = (text: string) => {
     return text.includes('snapchat.com') || text.includes('t.snapchat.com');
@@ -85,7 +90,8 @@ const SnapchatDownloader = () => {
           toast.success('Story loaded successfully!');
         } else {
           setStories(result.data);
-          toast.success(`Found ${result.data.total_count} stories!`);
+          const totalItems = (result.data.stories?.length || 0) + (result.data.spotlight?.length || 0);
+          toast.success(`Found ${totalItems} items! (${result.data.stories?.length || 0} stories, ${result.data.spotlight?.length || 0} spotlight videos)`);
         }
       } else {
         toast.error(result.message || 'Failed to fetch stories');
@@ -124,6 +130,41 @@ const SnapchatDownloader = () => {
     }
   };
 
+  const handleVideoPlay = (storyId: string, videoUrl: string) => {
+    setPlayingVideo(storyId);
+    // Create video element and play
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.controls = true;
+    video.autoplay = true;
+    video.style.position = 'fixed';
+    video.style.top = '50%';
+    video.style.left = '50%';
+    video.style.transform = 'translate(-50%, -50%)';
+    video.style.zIndex = '9999';
+    video.style.maxWidth = '90vw';
+    video.style.maxHeight = '90vh';
+    video.style.backgroundColor = 'black';
+    
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    overlay.style.zIndex = '9998';
+    
+    overlay.onclick = () => {
+      document.body.removeChild(overlay);
+      document.body.removeChild(video);
+      setPlayingVideo(null);
+    };
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(video);
+  };
+
   const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
@@ -139,16 +180,94 @@ const SnapchatDownloader = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const renderStoryCard = (story: Story, isSpotlight = false) => (
+    <Card key={story.id} className="backdrop-blur-md bg-white/10 border-white/20 overflow-hidden hover:bg-white/20 transition-all duration-300">
+      <div className="relative group">
+        <img
+          src={story.thumbnail || 'https://via.placeholder.com/300x400?text=No+Thumbnail'}
+          alt={story.title}
+          className="w-full h-48 object-cover"
+        />
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            onClick={() => story.best_quality && handleVideoPlay(story.id, story.best_quality.url)}
+            className="bg-white/20 hover:bg-white/40 text-white border-white/30"
+            size="lg"
+          >
+            <Play className="w-8 h-8" />
+          </Button>
+        </div>
+        <div className="absolute top-2 right-2 flex gap-2">
+          <Badge className="bg-black/50 text-white">
+            {formatDuration(story.duration)}
+          </Badge>
+          {isSpotlight && (
+            <Badge className="bg-yellow-500/80 text-black">
+              <Sparkles className="w-3 h-3 mr-1" />
+              Spotlight
+            </Badge>
+          )}
+        </div>
+        {playingVideo === story.id && (
+          <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center">
+            <span className="text-white font-semibold">Playing...</span>
+          </div>
+        )}
+      </div>
+      
+      <CardContent className="p-4">
+        <h3 className="text-white font-semibold mb-2 truncate">
+          {story.title}
+        </h3>
+        
+        <div className="flex items-center gap-2 mb-3 text-white/70 text-sm">
+          <Eye className="w-4 h-4" />
+          <span>{story.view_count?.toLocaleString() || 0} views</span>
+          <Clock className="w-4 h-4 ml-2" />
+          <span>{story.upload_date}</span>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={() => story.best_quality && handleVideoPlay(story.id, story.best_quality.url)}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+            size="sm"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Play
+          </Button>
+          <Button
+            onClick={() => {
+              if (story.best_quality) {
+                handleDownload(
+                  story.best_quality.url,
+                  `${story.title}.${story.best_quality.ext}`,
+                  story.id
+                );
+              }
+            }}
+            disabled={!story.best_quality || downloadingId === story.id}
+            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+            size="sm"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {downloadingId === story.id ? 'Downloading...' : 'Download'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 p-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
             Snapchat Story Downloader
           </h1>
           <p className="text-white/80 text-lg">
-            Download Snapchat stories by entering a username or story URL
+            Download Snapchat stories and spotlight videos by entering a username or story URL
           </p>
         </div>
 
@@ -244,67 +363,59 @@ const SnapchatDownloader = () => {
           </Card>
         )}
 
-        {/* Stories Grid */}
+        {/* Stories and Spotlight Display */}
         {stories && (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold text-white mb-2">
-                @{stories.username}'s Stories
-              </h2>
-              <p className="text-white/80">
-                Found {stories.total_count} stories
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {stories.stories.map((story) => (
-                <Card key={story.id} className="backdrop-blur-md bg-white/10 border-white/20 overflow-hidden">
-                  <div className="relative">
-                    <img
-                      src={story.thumbnail || 'https://via.placeholder.com/300x400?text=No+Thumbnail'}
-                      alt={story.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <Play className="w-12 h-12 text-white" />
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-black/50 text-white">
-                        {formatDuration(story.duration)}
-                      </Badge>
-                    </div>
+          <div className="space-y-8">
+            {/* User Profile Header */}
+            <Card className="backdrop-blur-md bg-white/10 border-white/20">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 flex items-center justify-center">
+                    <User className="w-8 h-8 text-white" />
                   </div>
-                  
-                  <CardContent className="p-4">
-                    <h3 className="text-white font-semibold mb-2 truncate">
-                      {story.title}
-                    </h3>
-                    
-                    <div className="flex items-center gap-2 mb-3 text-white/70 text-sm">
-                      <Eye className="w-4 h-4" />
-                      <span>{story.view_count?.toLocaleString() || 0} views</span>
-                    </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">@{stories.username}</h2>
+                    <p className="text-white/70">
+                      {stories.stories?.length || 0} Stories • {stories.spotlight?.length || 0} Spotlight Videos
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                    <Button
-                      onClick={() => {
-                        if (story.best_quality) {
-                          handleDownload(
-                            story.best_quality.url,
-                            `${story.title}.${story.best_quality.ext}`,
-                            story.id
-                          );
-                        }
-                      }}
-                      disabled={!story.best_quality || downloadingId === story.id}
-                      className="w-full bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      {downloadingId === story.id ? 'Downloading...' : 'Download'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {/* Stories Section */}
+            {stories.stories && stories.stories.length > 0 && (
+              <div>
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                    <Clock className="w-6 h-6" />
+                    Stories ({stories.stories.length})
+                  </h3>
+                  <p className="text-white/80">Recent stories from @{stories.username}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {stories.stories.map((story) => renderStoryCard(story, false))}
+                </div>
+              </div>
+            )}
+
+            {/* Spotlight Section */}
+            {stories.spotlight && stories.spotlight.length > 0 && (
+              <div>
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-yellow-400" />
+                    Spotlight Highlights ({stories.spotlight.length})
+                  </h3>
+                  <p className="text-white/80">Popular spotlight videos from @{stories.username}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {stories.spotlight.map((story) => renderStoryCard(story, true))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -317,7 +428,7 @@ const SnapchatDownloader = () => {
             <CardContent className="text-white/80 space-y-4">
               <div>
                 <h4 className="font-semibold text-white mb-2">For Username Search:</h4>
-                <p>Enter a Snapchat username (e.g., "john_doe") to see all available stories from that user.</p>
+                <p>Enter a Snapchat username (e.g., "john_doe") to see all available stories and spotlight videos from that user.</p>
               </div>
               <div>
                 <h4 className="font-semibold text-white mb-2">For Single Story Download:</h4>
@@ -325,7 +436,7 @@ const SnapchatDownloader = () => {
               </div>
               <div className="bg-yellow-500/20 p-4 rounded-lg">
                 <p className="text-yellow-200">
-                  <strong>Note:</strong> Make sure the backend server is running on port 5000 for the downloader to work properly.
+                  <strong>Features:</strong> Play videos in runtime, download in multiple formats, view stories and spotlight content separately.
                 </p>
               </div>
             </CardContent>
