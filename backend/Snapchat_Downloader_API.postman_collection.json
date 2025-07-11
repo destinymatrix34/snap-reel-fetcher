@@ -1,0 +1,163 @@
+
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "Snapchat Downloader API",
+		"description": "Collection for testing Snapchat Downloader Flask API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/api/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"health"
+					]
+				},
+				"description": "Check if the API server is running"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Stories by Username",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"input\": \"username_here\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/snapchat/stories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"snapchat",
+						"stories"
+					]
+				},
+				"description": "Get all stories from a Snapchat username"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Stories by URL",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"input\": \"https://www.snapchat.com/add/username_here\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/snapchat/stories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"snapchat",
+						"stories"
+					]
+				},
+				"description": "Get all stories from a Snapchat profile URL"
+			},
+			"response": []
+		},
+		{
+			"name": "Download Single Story",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"input\": \"https://story.snapchat.com/s/story_url_here\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/snapchat/single",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"snapchat",
+						"single"
+					]
+				},
+				"description": "Download a single Snapchat story from direct URL"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Download URL",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"url\": \"https://direct_video_url_here.mp4\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/snapchat/download",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"snapchat",
+						"download"
+					]
+				},
+				"description": "Get download URL for a specific story"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}
