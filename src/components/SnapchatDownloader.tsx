@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Search, Download, Play, Eye, Clock, User, Sparkles } from 'lucide-react';
+import { Search, Download, Play, Eye, Clock, User, Sparkles, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -165,6 +164,11 @@ const SnapchatDownloader = () => {
     document.body.appendChild(video);
   };
 
+  const handleSnapchatRedirect = (snapchatUrl: string) => {
+    window.open(snapchatUrl, '_blank');
+    toast.info('Opening in Snapchat...');
+  };
+
   const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
@@ -227,7 +231,7 @@ const SnapchatDownloader = () => {
           <span>{story.upload_date}</span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-2">
           <Button
             onClick={() => story.best_quality && handleVideoPlay(story.id, story.best_quality.url)}
             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
@@ -254,6 +258,18 @@ const SnapchatDownloader = () => {
             {downloadingId === story.id ? 'Downloading...' : 'Download'}
           </Button>
         </div>
+
+        {/* Snapchat Redirect Button */}
+        {(story as any).snapchat_url && (
+          <Button
+            onClick={() => handleSnapchatRedirect((story as any).snapchat_url)}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+            size="sm"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Open in Snapchat
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -370,8 +386,12 @@ const SnapchatDownloader = () => {
             <Card className="backdrop-blur-md bg-white/10 border-white/20">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 flex items-center justify-center">
-                    <User className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-r from-pink-500 to-yellow-500 flex items-center justify-center">
+                    {stories.avatar ? (
+                      <img src={stories.avatar} alt={stories.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-8 h-8 text-white" />
+                    )}
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">@{stories.username}</h2>
@@ -436,7 +456,7 @@ const SnapchatDownloader = () => {
               </div>
               <div className="bg-yellow-500/20 p-4 rounded-lg">
                 <p className="text-yellow-200">
-                  <strong>Features:</strong> Play videos in runtime, download in multiple formats, view stories and spotlight content separately.
+                  <strong>New Features:</strong> Play videos in runtime, download in multiple formats, view stories and spotlight content separately, and open content directly in Snapchat app.
                 </p>
               </div>
             </CardContent>
