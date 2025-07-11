@@ -1,73 +1,102 @@
-# Welcome to your Lovable project
 
-## Project info
+# Snapchat Story Downloader
 
-**URL**: https://lovable.dev/projects/ba12d243-8c00-498d-9d3b-6edd8e8154b9
+A comprehensive web application for downloading Snapchat stories, similar to storyclone.com.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Username Search**: Enter a Snapchat username to fetch all available stories
+- **URL Download**: Paste a direct Snapchat story URL to download specific content  
+- **Modern UI**: Beautiful gradient design with responsive layout
+- **Story Grid**: Display stories in an organized grid with thumbnails
+- **Multiple Formats**: Choose from different video qualities for download
+- **Real-time Feedback**: Toast notifications and loading states
 
-**Use Lovable**
+## Project Structure
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ba12d243-8c00-498d-9d3b-6edd8e8154b9) and start prompting.
+```
+├── backend/              # Flask API server
+│   ├── app.py           # Main Flask application
+│   ├── requirements.txt # Python dependencies
+│   └── README.md        # Backend setup instructions
+├── src/                 # React frontend
+│   ├── components/      # UI components
+│   ├── pages/          # Page components
+│   └── ...             # Other frontend files
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+## Setup Instructions
 
-**Use your preferred IDE**
+### Backend Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Navigate to the backend folder:
+```bash
+cd backend
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-Follow these steps:
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+4. Run the Flask server:
+```bash
+python app.py
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+The backend API will be available at `http://localhost:5000`
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Frontend Setup
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The frontend will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Usage
 
-**Use GitHub Codespaces**
+1. **For Username Search**: Enter a Snapchat username (e.g., "john_doe") to see all available stories
+2. **For URL Download**: Paste a direct Snapchat story URL to download that specific story
+3. **Download**: Click the download button on any story to save it to your device
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## API Endpoints
 
-## What technologies are used for this project?
+- `GET /api/health` - Health check
+- `POST /api/snapchat/stories` - Get all stories from a username
+- `POST /api/snapchat/single` - Download single story from URL
+- `POST /api/snapchat/download` - Get download URL for a story
 
-This project is built with:
+## Technologies Used
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Backend
+- Flask - Python web framework
+- yt-dlp - Video downloading library
+- Flask-CORS - Cross-origin resource sharing
 
-## How can I deploy this project?
+### Frontend
+- React - UI framework
+- TypeScript - Type safety
+- Tailwind CSS - Styling
+- shadcn/ui - UI components
+- Lucide React - Icons
+- Sonner - Toast notifications
 
-Simply open [Lovable](https://lovable.dev/projects/ba12d243-8c00-498d-9d3b-6edd8e8154b9) and click on Share -> Publish.
+## Notes
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- The backend uses yt-dlp for extracting Snapchat story information
+- Demo stories are provided when real extraction fails for testing purposes
+- The application includes proper error handling and user feedback
+- All downloads are handled client-side for better performance
